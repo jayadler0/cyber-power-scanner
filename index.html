@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cyber Power QR Scanner</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box} body{margin:0;background:#f3f6f4;color:#142014;min-height:100vh}
+.wrap{max-width:560px;margin:auto;padding:20px 16px 32px}
+.card{background:#fff;border-radius:22px;padding:22px;box-shadow:0 8px 30px rgba(0,0,0,.10)}
+h1{margin:0;font-size:25px} .sub{color:#667066;margin:7px 0 18px}
+#reader{width:100%;overflow:hidden;border-radius:16px}
+.status{margin-top:16px;padding:13px 14px;border-radius:12px;background:#eef4ef;color:#445}
+button{border:0;border-radius:12px;padding:13px 18px;font-weight:700;font-size:16px;cursor:pointer}
+.primary{background:#1f6b3a;color:white;width:100%;margin-top:14px}
+.danger{background:#f1e8e8;color:#8b2222}
+.small{font-size:12px;color:#777;margin-top:15px;line-height:1.45}
+#manual{display:none;margin-top:15px}
+input{width:100%;padding:13px;border:1px solid #ccc;border-radius:10px;font-size:16px}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+<h1>Cyber Power</h1>
+<div class="sub">Authorized Employee QR Scanner</div>
+<div id="reader"></div>
+<div id="status" class="status">Point the camera at an employee QR code.</div>
+<button id="restart" class="primary" style="display:none">Scan Another</button>
+<div class="small">The QR should contain only an employee token such as <b>EMP-EL2EPJ7Q</b>. The scanner sends that token to your private Apps Script web app.</div>
+<div id="manual">
+<input id="token" placeholder="Enter token manually">
+<button class="primary" onclick="openResult()">Look Up Token</button>
+</div>
+</div></div>
+<script>
+/*
+  IMPORTANT:
+  Replace APPS_SCRIPT_URL below with your deployed Apps Script /exec URL.
+*/
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBfmOVbnLDbcihsDpLyq_UhO4vFGuUv6QmNXt0hAEkbIto198-0o74-i3GYJRq3ClHQw/exec";
+let scanner;
+
+function setStatus(t){document.getElementById("status").textContent=t}
+function openResult(token){
+  token = (token || document.getElementById("token").value || "").trim();
+  if(!token){setStatus("Please scan or enter a token.");return}
+  if(APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+    setStatus("Setup incomplete: paste your Apps Script /exec URL into APPS_SCRIPT_URL.");
+    return;
+  }
+  window.location.href = APPS_SCRIPT_URL + "?token=" + encodeURIComponent(token);
+}
+function onScanSuccess(decodedText){
+  scanner.clear().catch(()=>{});
+  document.getElementById("restart").style.display="block";
+  setStatus("QR detected: " + decodedText);
+  setTimeout(()=>openResult(decodedText),250);
+}
+function onScanFailure(){}
+
+function startScanner(){
+  document.getElementById("restart").style.display="none";
+  scanner = new Html5Qrcode("reader");
+  scanner.start(
+    {facingMode:"environment"},
+    {fps:10,qrbox:{width:250,height:250}},
+    onScanSuccess,onScanFailure
+  ).catch(err=>{
+    setStatus("Camera could not start. Allow camera access, then reload this page.");
+    document.getElementById("manual").style.display="block";
+    console.error(err);
+  });
+}
+document.getElementById("restart").onclick=()=>location.reload();
+startScanner();
+</script>
+</body>
+</html>
